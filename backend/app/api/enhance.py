@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from app.adapters.base import AdapterFailure
 from app.adapters.image_edit_adapter import make_image_edit_adapter
 from app.engine.intent_mapper import parse_intent
-from app.engine.old_photo_detector import restore_prompt_for
+from app.engine.old_photo_detector import is_restore_option, restore_prompt_for
 from app.engine.param_enhance import apply_operations
 from app.storage import db
 from app.storage.files import output_dir, to_url
@@ -77,13 +77,15 @@ async def enhance(req: EnhanceRequest):
     device_id = job["device_id"]
     out_path = output_dir(device_id, req.job_id) / f"option_{i + 1}.jpg"
     is_old = bool(analysis.get("is_old_photo"))
+    # 与不稳定的 cv2 老照片判别解耦: 用户选了"修复/上色"类选项就走生成式 (gpt-image-2)。
+    use_restore = is_old or is_restore_option(name, intent)
 
     t0 = time.perf_counter()
     method = "param"
 
     # 老照片: 先试生成式修复。relay 偶发 429/网络抖动 -> 重试几次再降级 (429 失败很快,
     # 真正出图才慢, 所以多次重试通常仍在可接受时长内)。
-    if is_old:
+    if use_restore:
         prompt = restore_prompt_for(name)
         original = await asyncio.to_thread(Path(in_path).read_bytes)
         size = _edit_size(original)

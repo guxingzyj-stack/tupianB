@@ -127,6 +127,22 @@ def restore_prompt_for(option_name: str) -> str:
     return _RESTORE_PROMPTS.get(option_name, _RESTORE_PROMPTS["修旧如新"])
 
 
+# 修复类关键词 (名称/意图命中即走生成式 gpt-image-2)。不含"清/亮"等普通增强词, 防误判普通照片。
+_RESTORE_HINTS = ("旧", "老", "彩色", "上色", "褪色", "还原", "划痕", "泛黄", "修复", "黑白", "翻新")
+
+
+def is_restore_option(name: str, intent: str = "") -> bool:
+    """该选项是否属于"老照片修复/上色"类 → 应走生成式编辑 (gpt-image-2)。
+
+    判据: 名称命中预设修复选项, 或名称/意图含修复类关键词。把生成式修复与不稳定的
+    cv2 老照片判别解耦: 只要用户选的是修复/上色类选项就修, 不依赖 is_old 标志。
+    """
+    if name in _RESTORE_PROMPTS:
+        return True
+    text = f"{name or ''} {intent or ''}"
+    return any(k in text for k in _RESTORE_HINTS)
+
+
 def old_photo_options(is_bw: bool) -> list[dict]:
     """老照片预设三选项 (PRD §7.3)。彩色老照片把"变成彩色"换成"颜色还原"。"""
     second = (
