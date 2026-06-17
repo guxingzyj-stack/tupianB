@@ -23,18 +23,32 @@ class _LongPressCompareViewState extends State<LongPressCompareView> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque, // 整块区域都可点, 不漏手势
+      // 点一下切换 (适老化, 比长按稳且好发现); 按住也支持: 按住看原图、松开恢复。
+      onTap: () => setState(() => _showOriginal = !_showOriginal),
       onLongPressStart: (_) => setState(() => _showOriginal = true),
       onLongPressEnd: (_) => setState(() => _showOriginal = false),
+      onLongPressCancel: () => setState(() => _showOriginal = false),
       child: Stack(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: AspectRatio(
               aspectRatio: widget.aspectRatio,
-              child: Image(
-                image: _showOriginal ? widget.originalImage : widget.resultImage,
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
+              // 原图与结果图都预先渲染, 用透明度瞬间切换 (避免重新加载导致"没反应")。
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image(image: widget.resultImage, fit: BoxFit.cover, gaplessPlayback: true),
+                  Opacity(
+                    opacity: _showOriginal ? 1.0 : 0.0,
+                    child: Image(
+                      image: widget.originalImage,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -48,7 +62,7 @@ class _LongPressCompareViewState extends State<LongPressCompareView> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                _showOriginal ? '原来的样子' : '按住看原图',
+                _showOriginal ? '这是原图 · 再点看修好的' : '点一下看原图',
                 style: const TextStyle(color: Colors.white, fontSize: 15),
               ),
             ),

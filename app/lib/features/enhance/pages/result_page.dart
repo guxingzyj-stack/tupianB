@@ -84,7 +84,7 @@ class _ResultPageState extends ConsumerState<ResultPage> {
               _mainImage(s),
               const SizedBox(height: 8),
               Center(
-                child: Text('按住可以看原来的样子',
+                child: Text('点一下大图,可以看原来的样子',
                     style: t.bodyMedium?.copyWith(color: Colors.black54)),
               ),
               const SizedBox(height: 16),
