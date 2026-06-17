@@ -128,7 +128,21 @@ _RESTORE_PROMPTS = {
 
 
 def restore_prompt_for(option_name: str) -> str:
-    return _RESTORE_PROMPTS.get(option_name, _RESTORE_PROMPTS["修旧如新"])
+    """按选项名选修复提示词。
+
+    claude 的选项命名并不固定 (如"变彩色"/"上色"/"还原色彩"/"脸更清楚"…), 精确匹配不到时
+    必须按关键词兜底, 否则"上色"类选项会错用成"修旧如新"导致**只修复不上色 (出黑白)**。
+    """
+    name = option_name or ""
+    if name in _RESTORE_PROMPTS:
+        return _RESTORE_PROMPTS[name]
+    if any(k in name for k in ("彩色", "上色", "变彩", "着色")):
+        return _RESTORE_PROMPTS["变成彩色"]
+    if any(k in name for k in ("还原", "颜色", "色彩")):
+        return _RESTORE_PROMPTS["颜色还原"]
+    if any(k in name for k in ("脸", "面", "人物")):
+        return _RESTORE_PROMPTS["脸更清楚"]
+    return _RESTORE_PROMPTS["修旧如新"]
 
 
 # 修复类关键词 (名称/意图命中即走生成式 gpt-image-2)。不含"清/亮"等普通增强词, 防误判普通照片。
