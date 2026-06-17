@@ -1,0 +1,46 @@
+# ===== 老照 项目根 .gitignore =====
+# 绝不提交密钥 / 运行期数据 / 构建产物 / 测试生成物。
+
+# --- 密钥 (含 relay key, 最高优先) ---
+.env
+*.env
+!.env.example
+**/.env
+
+# --- Python / 后端 ---
+backend/.venv/
+.venv/
+**/__pycache__/
+*.py[cod]
+backend/.pytest_cache/
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+backend/smoke_output/
+backend/scenes8_results.json
+# 测试/探测生成的图片与视频 (可重生, 体积大)
+backend/validation/
+
+# --- Flutter / 客户端 ---
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/pubspec.lock
+app/ios/Pods/
+app/android/.gradle/
+app/android/local.properties
+# golden 测试的临时缩放预览图 (保留正式 golden 作为测试基线)
+app/test/goldens/*_view.png
+
+# --- 本地工具配置 (含本机绝对路径) ---
+.claude/
+
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml

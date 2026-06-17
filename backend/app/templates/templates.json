@@ -1,0 +1,58 @@
+{
+  "categories": [
+    {
+      "id": "festival",
+      "name": "节日祝福",
+      "templates": [
+        {"id": "newyear", "name": "新年快乐", "music": "newyear.mp3", "video_motion": "slow_zoom",
+         "image_intent": "暖色调、喜庆红金、提亮",
+         "texts": ["新年快乐 阖家团圆", "岁岁平安 福气满满", "新春大吉"]},
+        {"id": "midautumn", "name": "中秋团圆", "music": "midautumn.mp3", "video_motion": "slow_zoom",
+         "image_intent": "暖色调、增强月光感、保护人脸",
+         "texts": ["中秋快乐 阖家团圆", "明月寄相思 团圆庆中秋", "千里共婵娟"]},
+        {"id": "dragonboat", "name": "端午安康", "music": "dragonboat.mp3", "video_motion": "env_breeze",
+         "image_intent": "清爽绿色调、通透",
+         "texts": ["端午安康", "粽叶飘香 安康常伴", "龙舟竞渡 福满人间"]}
+      ]
+    },
+    {
+      "id": "birthday",
+      "name": "生日",
+      "templates": [
+        {"id": "longevity", "name": "寿比南山", "music": "birthday.mp3", "video_motion": "slow_zoom",
+         "image_intent": "暖金色调、喜庆、提亮人脸",
+         "texts": ["寿比南山 福如东海", "福寿安康", "岁岁年年 福寿绵长"]},
+        {"id": "happybirthday", "name": "生日快乐", "music": "birthday.mp3", "video_motion": "slow_zoom",
+         "image_intent": "明亮、色彩鲜艳、温馨",
+         "texts": ["生日快乐", "岁岁平安 年年有今朝", "祝您生日快乐 身体健康"]},
+        {"id": "longlife", "name": "长命百岁", "music": "birthday.mp3", "video_motion": "subtle_human",
+         "image_intent": "暖色、柔光、提亮人脸",
+         "texts": ["长命百岁", "健康长寿 福乐绵绵", "福星高照 寿星永驻"]}
+      ]
+    },
+    {
+      "id": "animate",
+      "name": "让照片动",
+      "templates": [
+        {"id": "zoom", "name": "缓慢推镜", "music": "calm.mp3", "video_motion": "slow_zoom",
+         "image_intent": "轻度增强、通透", "texts": ["", "美好时光", "记录这一刻"]},
+        {"id": "breeze", "name": "环境微动", "music": "calm.mp3", "video_motion": "env_breeze",
+         "image_intent": "色彩增强、通透", "texts": ["", "微风轻拂", "岁月静好"]},
+        {"id": "humansoft", "name": "人物轻动", "music": "calm.mp3", "video_motion": "subtle_human",
+         "image_intent": "柔光、提亮人脸", "texts": ["", "笑容依旧", "温暖瞬间"]}
+      ]
+    },
+    {
+      "id": "family",
+      "name": "全家福",
+      "templates": [
+        {"id": "harmony", "name": "阖家欢乐", "music": "warm.mp3", "video_motion": "slow_zoom",
+         "image_intent": "暖色调、提亮人脸、温馨", "texts": ["阖家欢乐", "家和万事兴", "团团圆圆 幸福美满"]},
+        {"id": "reunion", "name": "三世同堂", "music": "warm.mp3", "video_motion": "slow_zoom",
+         "image_intent": "暖色、柔光、保护人脸", "texts": ["三世同堂", "天伦之乐", "四世同堂 福满人间"]},
+        {"id": "peaceful", "name": "岁月静好", "music": "warm.mp3", "video_motion": "env_breeze",
+         "image_intent": "柔和、暖色、通透", "texts": ["岁月静好", "平安喜乐", "现世安稳 岁月静好"]}
+      ]
+    }
+  ]
+}

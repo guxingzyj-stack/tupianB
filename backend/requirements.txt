@@ -1,0 +1,17 @@
+# 后端依赖 (面向 Docker/Python 3.11 部署环境)
+# 本地若用更新版本的 Python, opencv 可能暂无 wheel, 第 1 周代码不依赖 cv2,
+# 可只装其余依赖; opencv 在第 3 周老照片功能才真正用到。
+
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+pydantic>=2.10,<3.0
+pydantic-settings>=2.7,<3.0
+httpx>=0.28,<1.0
+Pillow>=11.0
+numpy>=2.1
+opencv-python-headless>=4.10
+python-multipart>=0.0.20
+
+# 测试
+pytest>=8.3
+pytest-asyncio>=0.25
