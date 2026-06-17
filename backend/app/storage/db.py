@@ -56,6 +56,21 @@ def init_db() -> None:
         conn.executescript(schema)
 
 
+def fail_stale_jobs() -> int:
+    """启动时把上一容器残留的 pending/running 任务标记为 failed。
+
+    异步队列 worker 只在内存里, 容器重启 (部署/OOM) 后这些任务永远跑不完。标记失败
+    让客户端轮询到结果、提示重试, 而不是一直转圈。返回清理条数。
+    """
+    with get_db() as conn:
+        cur = conn.execute(
+            "UPDATE jobs SET status = 'failed', error_msg = ?, updated_at = ? "
+            "WHERE status IN ('pending', 'running')",
+            ("服务刚重启，这个任务中断了，请重新生成", now_ts()),
+        )
+        return cur.rowcount
+
+
 # --------------------------------------------------------------------------- #
 # 小工具
 # --------------------------------------------------------------------------- #

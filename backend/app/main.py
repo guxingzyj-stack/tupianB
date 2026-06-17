@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import __version__
 from app.config import settings
-from app.storage.db import init_db
+from app.storage.db import fail_stale_jobs, init_db
 from app.storage.files import ensure_dirs
 from app.middleware.auth import AppTokenMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
@@ -34,6 +34,7 @@ ensure_dirs()
 async def lifespan(app: FastAPI):
     ensure_dirs()
     init_db()
+    fail_stale_jobs()  # 上次容器残留的未完成任务标记失败, 避免客户端一直转圈
     queue.register("video", video_handler)
     queue.register("template", template_handler)
     await queue.start()
