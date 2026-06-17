@@ -61,6 +61,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 重接口处理完后主动把空闲堆还给 OS。Python + cv2/numpy/Pillow 处理大图后 RSS 不会
+# 自动回落, 在内存吃紧的部署节点上会累积到被 OOM 驱逐 (实测涨到 203MB)。malloc_trim
+# 让 RSS 回到基础值, 压在驱逐线以下。仅对 POST /api/* 触发, 不拖慢静态文件请求。
+import ctypes as _ctypes  # noqa: E402
+import gc as _gc  # noqa: E402
+
+try:
+    _libc = _ctypes.CDLL("libc.so.6")  # Linux/glibc 容器
+except Exception:  # noqa: BLE001 —— 非 Linux 环境跳过 (本地 Windows 开发)
+    _libc = None
+
+
+@app.middleware("http")
+async def _release_memory(request, call_next):
+    response = await call_next(request)
+    try:
+        if request.method == "POST" and request.url.path.startswith("/api/"):
+            _gc.collect()
+            if _libc is not None:
+                _libc.malloc_trim(0)
+    except Exception:  # noqa: BLE001
+        pass
+    return response
+
+
 # 用户图片/视频对外以 URL 提供 (24h 临时, 清理由后台 cron 负责)
 app.mount("/files", StaticFiles(directory=settings.file_base, check_dir=False), name="files")
 
