@@ -15,14 +15,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import cv2
-import numpy as np
+# cv2 (OpenCV) 常驻内存约 80MB; 不在模块顶层导入, 改为函数内懒加载,
+# 让启动 / 健康检查 / 非老照片路径保持低内存 (部署节点内存吃紧, 避免 OOM 驱逐)。
 
 _OLD_KEYWORDS = ["老照片", "旧照", "翻拍", "黑白", "泛黄", "年代久", "老相片", "怀旧", "复古"]
 
 
-def _load_bgr(path: str | Path) -> np.ndarray | None:
+def _load_bgr(path: str | Path) -> "np.ndarray | None":
     """用 imdecode 读图, 避开 cv2.imread 在 Windows 非 ASCII 路径返回 None 的坑。"""
+    import cv2
+    import numpy as np
+
     try:
         data = np.fromfile(str(path), dtype=np.uint8)
         if data.size == 0:
@@ -34,6 +37,9 @@ def _load_bgr(path: str | Path) -> np.ndarray | None:
 
 def analyze_oldness(image_path: str | Path, claude_scene: str = "") -> dict:
     """返回 {is_old, signals, mean_sat, is_bw, metrics}。"""
+    import cv2
+    import numpy as np
+
     img = _load_bgr(image_path)
     if img is None:
         return {"is_old": False, "signals": [], "mean_sat": 0.0, "is_bw": False, "metrics": {}}

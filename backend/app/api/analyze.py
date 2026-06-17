@@ -63,12 +63,36 @@ class AnalyzeRequest(BaseModel):
     image_url: str | None = None  # 预留
 
 
-def _save_input(raw: bytes, path: Path) -> None:
-    """把上传的原图统一转存为 JPEG (尊重 EXIF 方向)。"""
+# 处理/输出分辨率上限。手机原图动辄几千万像素, 全尺寸解码会让内存峰值飙到
+# 100MB+ (PIL/cv2 多份拷贝), 在内存吃紧的部署节点上直接 OOM 被驱逐。统一缩到此
+# 上限, 下游 (老照片判别 cv2 / 参数化引擎 / 送 relay) 全部受益。
+_MAX_DIM = 1600
+_AI_MAX_DIM = 1536  # 送看图模型的尺寸 (Claude 内部也约 1568px, 再大无意义)
+
+
+def _load_capped(raw: bytes, max_dim: int) -> Image.Image:
+    """从 bytes 加载并缩到 ≤max_dim。对 JPEG 用 draft 在解码阶段就降采样, 封住内存峰值。"""
     img = Image.open(io.BytesIO(raw))
+    try:
+        img.draft("RGB", (max_dim, max_dim))  # 仅 JPEG 生效: 按 1/2,1/4,1/8 降分辨率解码
+    except Exception:  # noqa: BLE001
+        pass
     img = ImageOps.exif_transpose(img).convert("RGB")
+    if max(img.size) > max_dim:
+        img.thumbnail((max_dim, max_dim), Image.LANCZOS)
+    return img
+
+
+def _prepare_input(raw: bytes, path: Path) -> bytes:
+    """缩放后存为输入 JPEG (尊重 EXIF 方向), 并返回送看图模型的(更小) JPEG bytes。"""
+    img = _load_capped(raw, _MAX_DIM)
     path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(path, "JPEG", quality=95)
+    img.save(path, "JPEG", quality=92)
+    if max(img.size) > _AI_MAX_DIM:
+        img.thumbnail((_AI_MAX_DIM, _AI_MAX_DIM), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=88)
+    return buf.getvalue()
 
 
 async def _analyze_with_fallback(image_b64: str, mime: str) -> dict:
@@ -118,9 +142,10 @@ async def analyze(req: AnalyzeRequest):
 
     mime = _MIME_BY_FORMAT.get(fmt, "image/jpeg")
 
-    # 保存原图
+    # 保存原图 (缩到上限以封住内存峰值), 同时拿到送看图模型用的小图
     in_path = input_path(device_id, job_id)
-    await asyncio.to_thread(_save_input, raw, in_path)
+    ai_jpeg = await asyncio.to_thread(_prepare_input, raw, in_path)
+    del raw  # 尽早释放全尺寸原始字节
     db.create_job(
         job_id, device_id, type="analyze", status="running", input_path=str(in_path)
     )
@@ -134,9 +159,9 @@ async def analyze(req: AnalyzeRequest):
     except Exception:  # noqa: BLE001
         logger.exception("基础修复版生成失败 job=%s", job_id)
 
-    # AI 看图 (用原始 bytes 的干净 base64)
-    clean_b64 = base64.b64encode(raw).decode("ascii")
-    analysis = await _analyze_with_fallback(clean_b64, mime)
+    # AI 看图 (用缩放后的小 JPEG: 省内存/带宽/token; Claude 内部也只用到约 1568px)
+    clean_b64 = base64.b64encode(ai_jpeg).decode("ascii")
+    analysis = await _analyze_with_fallback(clean_b64, "image/jpeg")
     analysis["prompt_version"] = PROMPT_VERSION
 
     # 老照片判别 (任务 4.1): 命中 -> 换成预设老照片三选项 (PRD §7.1/§7.3)
