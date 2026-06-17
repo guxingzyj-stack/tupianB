@@ -23,6 +23,8 @@ COPY . .
 ENV DB_PATH=/app/data/app.db \
     FILE_BASE=/app/data/files
 
-EXPOSE 8000
+# Zeabur 默认把域名路由到容器 8080 端口; 这里对齐到 8080。
+# 用 ${PORT} 兜底: 平台若注入 PORT 就用它, 否则默认 8080。
+EXPOSE 8080
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}
