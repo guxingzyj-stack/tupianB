@@ -43,7 +43,11 @@ class _RetryInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final attempt = (err.requestOptions.extra['retry_attempt'] as int?) ?? 0;
-    if (_retriable.contains(err.type) && attempt < retries) {
+    // 慢且昂贵的接口(看图/修图)不自动重试: 超时只是还在等结果, 重试会重复发、重复跑。
+    final path = err.requestOptions.path;
+    final noAutoRetry =
+        path.contains('/api/enhance') || path.contains('/api/analyze');
+    if (!noAutoRetry && _retriable.contains(err.type) && attempt < retries) {
       final next = attempt + 1;
       err.requestOptions.extra['retry_attempt'] = next;
       await Future<void>.delayed(Duration(milliseconds: 400 * next));
