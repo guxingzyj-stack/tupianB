@@ -1,0 +1,64 @@
+name: build-apk
+
+# 云端打包安卓 APK。
+# 本地 Windows 机器的 AF_UNIX 被内核网络过滤驱动破坏, Gradle 守护进程无法在本地启动,
+# 故在干净的 Ubuntu runner 上编译。后端地址/令牌经 GitHub Secrets 注入 (公开仓库不可硬编码)。
+
+on:
+  workflow_dispatch: {}        # 支持手动触发
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 JDK 17 (Gradle 9.1 / AGP 9 需要)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 安装 Flutter (master, 匹配工程 Dart ^3.13 约束)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: master
+          cache: true
+
+      - name: 调低 Gradle 内存以适配 CI runner
+        working-directory: app/android
+        run: |
+          sed -i 's|^org.gradle.jvmargs=.*|org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g|' gradle.properties
+          echo '--- gradle.properties ---'
+          cat gradle.properties
+
+      - name: 环境自检
+        run: flutter doctor -v
+
+      - name: 拉取依赖
+        working-directory: app
+        run: flutter pub get
+
+      - name: 构建 Release APK
+        working-directory: app
+        run: |
+          flutter build apk --release \
+            --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }} \
+            --dart-define=APP_TOKEN=${{ secrets.APP_TOKEN }}
+          echo '--- APK 产物 ---'
+          ls -lh build/app/outputs/flutter-apk/
+
+      - name: 上传 APK 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: laozhao-release-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
