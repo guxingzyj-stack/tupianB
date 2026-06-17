@@ -37,7 +37,11 @@ class ImageEditAdapter:
         """
         files = {"image": ("photo.jpg", image_bytes, mime)}
         data = {"model": self.model, "prompt": prompt, "n": "1"}
-        if size:
+        # gpt-image 系列只接受 auto / 1024x1024 / 1536x1024 / 1024x1536; 传任意 WxH 会被拒。
+        # 用 "auto" 让它按原图比例自动选档 (实测保持横/竖构图)。其他模型 (如即梦) 用精确尺寸。
+        if self.model.startswith("gpt-image"):
+            data["size"] = "auto"
+        elif size:
             data["size"] = size
         headers = {"Authorization": f"Bearer {self.api_key}"}
         try:

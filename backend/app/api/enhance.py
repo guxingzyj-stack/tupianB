@@ -81,20 +81,31 @@ async def enhance(req: EnhanceRequest):
     t0 = time.perf_counter()
     method = "param"
 
-    # 老照片: 先试生成式修复
+    # 老照片: 先试生成式修复。relay 偶发 429/网络抖动 -> 重试几次再降级 (429 失败很快,
+    # 真正出图才慢, 所以多次重试通常仍在可接受时长内)。
     if is_old:
         prompt = restore_prompt_for(name)
-        try:
-            original = await asyncio.to_thread(Path(in_path).read_bytes)
-            result = await asyncio.to_thread(
-                image_edit_adapter.edit, original, prompt, "image/jpeg", _edit_size(original)
-            )
-            await asyncio.to_thread(_save_image_bytes, result, out_path)
-            method = "generative"
-        except AdapterFailure as exc:
-            logger.warning("生成式修复失败, 降级参数化 job=%s: %s", req.job_id, exc)
-        except Exception:  # noqa: BLE001
-            logger.exception("生成式修复异常, 降级参数化 job=%s", req.job_id)
+        original = await asyncio.to_thread(Path(in_path).read_bytes)
+        size = _edit_size(original)
+        for attempt in range(3):
+            try:
+                result = await asyncio.to_thread(
+                    image_edit_adapter.edit, original, prompt, "image/jpeg", size
+                )
+                await asyncio.to_thread(_save_image_bytes, result, out_path)
+                method = "generative"
+                break
+            except AdapterFailure as exc:
+                logger.warning(
+                    "生成式修复第 %d/3 次失败 job=%s: %s", attempt + 1, req.job_id, exc
+                )
+                if attempt < 2:
+                    await asyncio.sleep(1.5 * (attempt + 1))
+            except Exception:  # noqa: BLE001
+                logger.exception("生成式修复异常 job=%s", req.job_id)
+                break
+        if method != "generative":
+            logger.warning("生成式修复多次失败, 降级参数化 job=%s", req.job_id)
 
     # 普通照片, 或老照片生成式失败的降级
     if method != "generative":

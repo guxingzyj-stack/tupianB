@@ -20,6 +20,11 @@ class EnhanceApi {
       final resp = await _dio.post<dynamic>(
         '/api/analyze',
         data: {'device_id': deviceId, 'image': base64Encode(bytes)},
+        // 看图要上传整图 + 等 Claude + 处理, 放宽超时 (全局默认 30s 偏紧)
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 90),
+        ),
       );
       return AnalyzeResult.fromJson((resp.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
@@ -35,6 +40,8 @@ class EnhanceApi {
       final resp = await _dio.post<dynamic>(
         '/api/enhance',
         data: {'job_id': jobId, 'option_index': optionIndex},
+        // 生成式修复 (gpt-image-2) 约 40-65s, 远超全局默认 30s; 放宽到 150s 等出图
+        options: Options(receiveTimeout: const Duration(seconds: 150)),
       );
       return EnhanceResult.fromJson((resp.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {

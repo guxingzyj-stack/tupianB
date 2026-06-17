@@ -21,9 +21,9 @@ class Settings(BaseSettings):
     relay_model: str = "claude-sonnet-4-6"
     relay_backup_model: str = ""  # 留空 = 不启用备用模型
     # 老照片生成式修复 (指令式图像编辑, 经 relay /images/edits)
-    # doubao-seedream-4-5 实测可用~17-33s、质量好; gpt-image-2 更忠实但~65s。
-    # (qwen-image-edit / gpt-image-1 / flux 当前分组 429。)
-    image_edit_model: str = "doubao-seedream-4-5-251128"
+    # gpt-image-2: 实测对"含人物/儿童"的真实老照片不做内容拦截、上色质量好 (默认, ~40-65s)。
+    # doubao-seedream-4-5 质量也好但对有小孩的照片会 422 内容审核拦截, 不适合家庭老照片。
+    image_edit_model: str = "gpt-image-2"
     image_edit_timeout: float = 180.0
     # 图生视频 (Week 4): kling 原生代理 /kling/v1/videos/image2video,
     # model_name 用 kling 版本号 (kling-v1 实测可用, ~3-4 分钟出 5s 视频)。
