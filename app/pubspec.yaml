@@ -54,6 +54,9 @@ dependencies:
   # 视频播放 (视频结果页)
   video_player: ^2.9.2
 
+  # 保存到相册 (图片/视频)
+  gal: ^2.3.0
+
   # 说明: camera (第3周拍纸质老照片)、video_player+chewie (第4周视频)、
   #       fluwx (微信分享) 在对应周次再加, 避免现在引入未用依赖。
 

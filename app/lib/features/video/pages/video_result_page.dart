@@ -1,5 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/widgets/big_button.dart';
@@ -51,6 +54,20 @@ class _VideoResultPageState extends State<VideoResultPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg, style: const TextStyle(fontSize: 18))),
     );
+  }
+
+  Future<void> _save() async {
+    _todo('正在保存…');
+    try {
+      final dir = await getTemporaryDirectory();
+      final path =
+          '${dir.path}/laozhao_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      await Dio().download(widget.videoUrl, path);
+      await Gal.putVideo(path);
+      if (mounted) _todo('已保存到相册');
+    } catch (_) {
+      if (mounted) _todo('保存失败，请重试');
+    }
   }
 
   @override
@@ -110,7 +127,7 @@ class _VideoResultPageState extends State<VideoResultPage> {
                       text: '保存',
                       icon: Icons.download,
                       isPrimary: false,
-                      onPressed: () => _todo('保存到相册（开发中）'),
+                      onPressed: () => _save(),
                     ),
                   ),
                 ],

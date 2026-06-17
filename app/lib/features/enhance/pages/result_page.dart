@@ -1,7 +1,12 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/api/api_client.dart';
 import '../../../core/widgets/big_button.dart';
 import '../../../core/widgets/elderly_app_bar.dart';
 import '../../../core/widgets/long_press_compare.dart';
@@ -121,7 +126,7 @@ class _ResultPageState extends ConsumerState<ResultPage> {
                       text: '保存',
                       icon: Icons.download,
                       isPrimary: false,
-                      onPressed: () => _todo(context, '保存到相册（开发中）'),
+                      onPressed: () => _save(context, s.selectedUrl),
                     ),
                   ),
                 ],
@@ -179,6 +184,24 @@ class _ResultPageState extends ConsumerState<ResultPage> {
           ),
       ],
     );
+  }
+
+  Future<void> _save(BuildContext context, String? url) async {
+    if (url == null) {
+      _todo(context, '稍等修好图再保存');
+      return;
+    }
+    _todo(context, '正在保存…');
+    try {
+      final resp = await ref.read(dioProvider).get<List<int>>(
+            url,
+            options: Options(responseType: ResponseType.bytes),
+          );
+      await Gal.putImageBytes(Uint8List.fromList(resp.data!));
+      if (context.mounted) _todo(context, '已保存到相册');
+    } catch (_) {
+      if (context.mounted) _todo(context, '保存失败，请重试');
+    }
   }
 
   void _todo(BuildContext context, String msg) {
