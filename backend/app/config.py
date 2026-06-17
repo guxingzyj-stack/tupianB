@@ -48,23 +48,26 @@ class Settings(BaseSettings):
     worker_count: int = 2
 
     @property
-    def chat_completions_url(self) -> str:
-        """relay 的 chat/completions 端点。
-
-        约定 RELAY_BASE_URL 填到 /v1; 这里补上 /chat/completions。
-        若用户没填 /v1 也尽量兜住。
-        """
-        base = self.relay_base_url.rstrip("/")
+    def relay_root(self) -> str:
+        """relay 的 /v1 根地址。强容错: 即使 RELAY_BASE_URL 误填成完整端点
+        (如 .../v1/images/edits 或 .../v1/chat/completions), 也能纠回 /v1 根,
+        避免出现 .../v1/images/edits/v1/chat/completions 这种重复路径 404。"""
+        base = self.relay_base_url.strip().rstrip("/")
+        for suffix in ("/images/edits", "/images/generations", "/chat/completions"):
+            if base.endswith(suffix):
+                base = base[: -len(suffix)].rstrip("/")
         if not base.endswith("/v1"):
             base = base + "/v1"
-        return base + "/chat/completions"
+        return base
+
+    @property
+    def chat_completions_url(self) -> str:
+        """relay 的 chat/completions 端点 (约定 RELAY_BASE_URL 填到 /v1)。"""
+        return self.relay_root + "/chat/completions"
 
     @property
     def image_edits_url(self) -> str:
-        base = self.relay_base_url.rstrip("/")
-        if not base.endswith("/v1"):
-            base = base + "/v1"
-        return base + "/images/edits"
+        return self.relay_root + "/images/edits"
 
 
 settings = Settings()
