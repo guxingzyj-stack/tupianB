@@ -121,7 +121,8 @@ class VideoAdapter:
 
 
 def make_video_adapter() -> VideoAdapter:
-    root = settings.relay_base_url.rstrip("/")
+    # 用规范化的 /v1 根 (容错: RELAY_BASE_URL 误填成完整端点也能纠回), 再去掉 /v1 拼 kling 原生路径。
+    root = settings.relay_root.rstrip("/")
     if root.endswith("/v1"):
         root = root[:-3].rstrip("/")
     submit_url = f"{root}/kling/v1/videos/image2video"
